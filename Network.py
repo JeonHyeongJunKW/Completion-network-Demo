@@ -11,10 +11,10 @@ class Discriminator(nn.Module):
       super().__init__()
       self.image_width = image_width
       self.image_height = image_height
-      self.flattenOutput = self.Input2Output(self,self.image_width,self.image_width,"Global")
+      self.flattenOutput = int(self.Input2Output(self.image_width,self.image_width,"Global"))
       self.local_image_width = local_image_width
       self.local_image_height = local_image_height
-      self.local_flattenOutput = self.Input2Output(self,self.local_image_width,self.local_image_width,"local")
+      self.local_flattenOutput = int(self.Input2Output(self.local_image_width,self.local_image_width,"local"))
     
       self.Local_Discriminator = nn.Sequential(
         nn.Conv2d(3,64,5,2),
@@ -37,8 +37,6 @@ class Discriminator(nn.Module):
         nn.Linear(self.flattenOutput,out_features=1024)
       )
       self.Concatentation = nn.Sequential(
-        nn.Linear(out_features = 2048),
-        nn.ReLU(),
         nn.Linear(2048,1),
         nn.Sigmoid()
       )
