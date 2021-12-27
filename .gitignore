@@ -1,1 +1,4 @@
 __pycache__/
+model_weight/
+runs/
+train_image/

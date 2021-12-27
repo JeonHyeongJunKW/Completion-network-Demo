@@ -17,22 +17,22 @@ class Discriminator(nn.Module):
       self.local_flattenOutput = int(self.Input2Output(self.local_image_width,self.local_image_width,"local"))
     
       self.Local_Discriminator = nn.Sequential(
-        nn.Conv2d(3,64,5,2),
-        nn.Conv2d(64,128,5,2),
-        nn.Conv2d(12,256,5,2),
-        nn.Conv2d(256,512,5,2),
-        nn.Conv2d(512,512,5,2),
+        nn.Conv2d(3,64,5,2,padding=2),#(Hin +2*padding -4-1)
+        nn.Conv2d(64,128,5,2,padding=2),
+        nn.Conv2d(128,256,5,2,padding=2),
+        nn.Conv2d(256,512,5,2,padding=2),
+        nn.Conv2d(512,512,5,2,padding=2),
         nn.Flatten(),
         nn.Linear(self.local_flattenOutput, out_features=1024)
       )
       
       self.Global_Discriminator = nn.Sequential(
-        nn.Conv2d(3,64,5,2),#
-        nn.Conv2d(64,128,5,2),
-        nn.Conv2d(12,256,5,2),
-        nn.Conv2d(256,512,5,2),
-        nn.Conv2d(512,512,5,2),
-        nn.Conv2d(512,512,5,2),
+        nn.Conv2d(3,64,5,2,padding=2),#
+        nn.Conv2d(64,128,5,2,padding=2),
+        nn.Conv2d(128,256,5,2,padding=2),
+        nn.Conv2d(256,512,5,2,padding=2),
+        nn.Conv2d(512,512,5,2,padding=2),
+        nn.Conv2d(512,512,5,2,padding=2),
         nn.Flatten(),
         nn.Linear(self.flattenOutput,out_features=1024)
       )
@@ -43,10 +43,7 @@ class Discriminator(nn.Module):
 
 
   def Input2Output(self,imageWidth,imageHeight,OutputType):
-    if OutputType =="Global":
-      return 512*((((((((imageWidth-5)/2)-5)/2-5)/2-5)/2-5)/2-5)/2)*((((((((imageHeight-5)/2)-5)/2-5)/2-5)/2-5)/2-5)/2)
-    else:
-      return 512*((((((imageWidth-5)/2)-5)/2-5)/2-5)/2-5)/2*((((((imageHeight-5)/2)-5)/2-5)/2-5)/2-5)/2
+    return 512*16
   
   def forward(self, full_image,local_image):
     full_dis = self.Global_Discriminator(full_image)
@@ -60,45 +57,48 @@ class Completion_Network(nn.Module):
   def __init__(self):
       super().__init__()
       self.conv_model = nn.Sequential(
-        nn.Conv2d(3,64,5,1,dilation=1),
+        nn.Conv2d(4,64,5,1,dilation=1,padding=2),# 
         nn.ReLU(),
-        nn.Conv2d(64,128,3,2,dilation=1),
+        nn.Conv2d(64,128,3,2,dilation=1,padding=1),#절반 감소 패딩합은 -0.5 +1 
         nn.ReLU(),
-        nn.Conv2d(128,128,3,1,dilation=1),
+        nn.Conv2d(128,128,3,1,dilation=1,padding=1),#
         nn.ReLU(),
-        nn.Conv2d(128,256,3,2,dilation=1),
+        nn.Conv2d(128,256,3,2,dilation=1,padding=1),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=1),
+        nn.Conv2d(256,256,3,1,dilation=1,padding=1),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=1),
+        nn.Conv2d(256,256,3,1,dilation=1,padding=1),
         nn.ReLU(),
       )
       self.dilated_conv_model = nn.Sequential(
-        nn.Conv2d(128,256,3,1,dilation=2),
+        nn.Conv2d(256,256,3,1,dilation=2,padding=2),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=4),
+        nn.Conv2d(256,256,3,1,dilation=4,padding=4),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=8),
+        nn.Conv2d(256,256,3,1,dilation=8,padding=8),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=16),
+        nn.Conv2d(256,256,3,1,dilation=16,padding=16),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=1),
+        nn.Conv2d(256,256,3,1,dilation=1,padding=1),
         nn.ReLU(),
-        nn.Conv2d(256,256,3,1,dilation=1),
+        nn.Conv2d(256,256,3,1,dilation=1,padding=1),
         nn.ReLU(),
       )
       self.deconv_model = nn.Sequential(
-        nn.ConvTranspose2d(256,128,4,2,dilation=1),
+        nn.ConvTranspose2d(256,128,4,2,dilation=1,padding=1),# (Hin -1 )*2 -2*1 + 1*(4-1) +1
         nn.ReLU(),
-        nn.Conv2d(128,128,3,1,dilation=4),
+        nn.Conv2d(128,128,3,1,dilation=1,padding=1),# (Hin -1)*2 -2*2 + 1*(3-1) +1
         nn.ReLU(),
-        nn.ConvTranspose2d(128,64,4,2,dilation=1),
+
+
+        nn.ConvTranspose2d(128,64,4,2,dilation=1,padding=1),
         nn.ReLU(),
-        nn.Conv2d(64,32,3,1,dilation=1),
+        nn.Conv2d(64,32,3,1,dilation=1,padding=1),
         nn.ReLU(),
-        nn.Conv2d(32,3,3,1,dilation=1),
+        nn.Conv2d(32,3,3,1,dilation=1,padding=1),
         nn.Sigmoid()
       )
+
   def forward(self,X):
     input1 = self.conv_model(X)
     input2 = self.dilated_conv_model(input1)
