@@ -9,7 +9,7 @@ from Mask_Maker import *
 
 class PlaceTwoDataset(data.Dataset):
   def __init__(self):
-    self.dataset = glob("/media/jeon/T7/Place2/train_256_places365standard/data_256/**/**/*.jpg")
+    self.dataset = glob("/media/jeon/새 볼륨/place/data_256/**/**/*.jpg")
     print("dataset size : ",len(self.dataset))
     self.transform1 = transforms.Compose(
       [transforms.ToTensor(), #텐서변환을 잠시 끄자. 
@@ -53,7 +53,7 @@ class PlaceTwoDataset(data.Dataset):
     return  unmasked_image, masked_image, mask, mask_center_x, mask_center_y
 
   def __len__(self):
-    return len(self.dataset)
+    return 10000
 
   
 class PlaceTwoTestDataset(data.Dataset):
@@ -102,4 +102,4 @@ class PlaceTwoTestDataset(data.Dataset):
     return  unmasked_image, masked_image, mask, mask_center_x, mask_center_y
 
   def __len__(self):
-    return len(self.dataset)
+    return 100

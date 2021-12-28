@@ -19,7 +19,6 @@ def DrawMiddleTrainResult(writer,origin_image, masked_image, return_image,epoch)
   masked_image = tensor2image(masked_image)
   # writer.add_image('masked image',masked_image)
   cv2.imwrite("train_image/mask image"+str(epoch)+".jpg",masked_image)
-
   return_image = tensor2image(return_image)
   # writer.add_image('fake image',return_image)
   cv2.imwrite("train_image/fake image"+str(epoch)+".jpg",return_image)

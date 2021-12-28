@@ -30,17 +30,18 @@ Des_Net = Discriminator(256,256,128,128).to(device)
 
 
 ##옵티마이저 및 손실함수 정의 
-OptimizerG = torch.optim.Adam(Generator.parameters(),lr=0.0001)
-OptimizerD = torch.optim.Adam(Des_Net.parameters(),lr=0.0001)
+OptimizerG = torch.optim.Adam(Generator.parameters(),lr=0.001)
+OptimizerD = torch.optim.Adam(Des_Net.parameters(),lr=0.001)
 
-loss_fn_1 = nn.MSELoss(reduction='sum') 
-loss_fn_2 = nn.BCELoss(reduction='sum')
+loss_fn_1 = nn.MSELoss(reduction='mean') 
+loss_fn_2 = nn.BCELoss(reduction='mean')
 
 #Generator의 출력이 1:1로 이미지가 같아지게하는 nn.Mse loss
 
 
 
 print("사용하는 디바이스", device)
+iteration =0
 for epoch in range(Tsum):
   for i , (unmasked_images, masked_images, masks, mask_center_x, mask_center_y) in enumerate(train_dataloader):
     unmasked_images= unmasked_images.to(device)
@@ -48,13 +49,17 @@ for epoch in range(Tsum):
     masks = masks.to(device)
     
     MaskAndMaskedImage = torch.cat([masked_images,masks],dim=1).to(device)
-    
+    Gen_loss =0
+    Des_Real_loss = 0
+    Des_Fake_loss = 0
+    full_Gen_loss = 0 
     if epoch < Tc:
       Generator.zero_grad()
       real_image = unmasked_images
       fake_image = Generator(MaskAndMaskedImage)
       loss_mse = loss_fn_1(fake_image,real_image)
       loss_mse.backward()
+      Gen_loss = loss_mse.item()
       OptimizerG.step()
     elif epoch < Tc+Td :
       Des_Net.zero_grad()
@@ -70,7 +75,7 @@ for epoch in range(Tsum):
       
       loss_bce_real.backward()#backward만 두개 해야한다.
 
-      
+      Des_Real_loss = loss_bce_real.item()
       
       with torch.no_grad():
         fake_image = Generator(MaskAndMaskedImage).to(device)
@@ -80,7 +85,7 @@ for epoch in range(Tsum):
       fake_label = torch.full((y_fake.size(0),1), 0., dtype=torch.float,device=device)
       loss_bce_fake = loss_fn_2(y_fake,fake_label)
       loss_bce_fake.backward()#backward만 두개 해야한다.
-
+      Des_Fake_loss = loss_bce_fake.item()
       OptimizerD.step()
         #descriminator 구분하기 
     else:
@@ -94,7 +99,7 @@ for epoch in range(Tsum):
 
       real_label = torch.full((y_real.size(0),1), 1., dtype=torch.float,device=device)
       loss_bce_real = loss_fn_2(y_real,real_label)
-      
+      Des_Real_loss = loss_bce_real.item()
       loss_bce_real.backward()#backward만 두개 해야한다.
 
       
@@ -106,18 +111,18 @@ for epoch in range(Tsum):
       fake_label = torch.full((y_fake.size(0),1), 0., dtype=torch.float,device=device)
       loss_bce_fake = loss_fn_2(y_fake,fake_label)
       loss_bce_fake.backward()#backward만 두개 해야한다.
-
+      Des_Fake_loss = loss_bce_fake.item()
       OptimizerD.step()
 
       Generator.zero_grad()
       y_fake = Des_Net(fake_image,fake_local_image)
       loss_G_fake = loss_fn_2(y_fake,real_label) +loss_fn_1(fake_image,real_image)*0.0004
       loss_G_fake.backward()
-
+      full_Gen_loss = loss_G_fake.item()
       OptimizerG.step()
 
 
-    if epoch %3 ==0 and i%1000 ==0:
+    if epoch %3 ==0 and i==0:
       
       with torch.no_grad():
         DrawMiddleTrainResult(writer, unmasked_images[0],masked_images[0],fake_image[0],epoch)
@@ -133,10 +138,23 @@ for epoch in range(Tsum):
         print("add new image")
     # print(Completed_image.shape)
   #모델 저장 
+    if iteration%100 ==0:
+        '''
+        Gen_loss =0
+        Des_Real_loss = 0
+        Des_Fake_loss = 0
+        full_Gen_loss = 0 
+        '''
+        writer.add_scalar("Generator loss", Gen_loss,iteration/100)
+        writer.add_scalar("Des_Real loss", Des_Real_loss,iteration/100)
+        writer.add_scalar("Des_Fake loss", Des_Fake_loss,iteration/100)
+        writer.add_scalar("Full_Gen loss", full_Gen_loss,iteration/100)
+        print("iter: ",iteration/100,"gen loss : ", Gen_loss," Des Real loss : ",Des_Real_loss, " Des_Fake loss : ",Des_Fake_loss," Full_Gen loss : ", full_Gen_loss)
+    iteration +=1
   if epoch %10 ==0:
     torch.save(Generator.state_dict(),
                         "./model_weight/Generator/epoch_"+str(epoch)+"_weight.pth")
-    torch.save(Generator.state_dict(),
+    torch.save(Des_Net.state_dict(),
                         "./model_weight/Descriminator/epoch_"+str(epoch)+"_weight.pth")
     print("현재 epoch : ", epoch)
 writer.close()

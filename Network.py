@@ -96,7 +96,7 @@ class Completion_Network(nn.Module):
         nn.Conv2d(64,32,3,1,dilation=1,padding=1),
         nn.ReLU(),
         nn.Conv2d(32,3,3,1,dilation=1,padding=1),
-        nn.Sigmoid()
+        nn.Tanh()
       )
 
   def forward(self,X):
