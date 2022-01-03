@@ -21,7 +21,7 @@ class PlaceTwoDataset(data.Dataset):
   
   def __getitem__(self,index):
     
-    mask = np.ones((256,256,1))
+    mask = np.zeros((256,256,1))
     random_param = np.random.rand(1,4)#시작 x,y / width, height
     random_param[0,0:2] = random_param[0,0:2]*128
     random_param[0,2:] = random_param[0,2:]*32+96
@@ -30,9 +30,9 @@ class PlaceTwoDataset(data.Dataset):
     mask_center_x = (random_param[0,0]+random_param[0,2]/2)
     mask_center_y = (random_param[0,1]+random_param[0,3]/2)
 
-    mask[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 0#구멍이 있는 이미지
-    mask_rgb = np.ones((256,256,3))
-    mask_rgb[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 0#구멍이 있는 이미지
+    mask[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 1#구멍이 있는 이미지
+    mask_rgb = np.zeros((256,256,3))
+    mask_rgb[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 1#구멍이 있는 이미지
     #특정 인덱스의 사진과 
     
     if torch.is_tensor(index):
@@ -43,7 +43,7 @@ class PlaceTwoDataset(data.Dataset):
 
     
     masked_image = unmasked_image.permute(1,2,0).numpy().copy()
-    masked_image[mask_rgb ==0] =0
+    masked_image[mask_rgb ==1] =1.
 
     unmasked_image = self.transform2(unmasked_image).type(torch.float)
     masked_image =torch.from_numpy(masked_image).permute(2,0,1)
@@ -70,7 +70,7 @@ class PlaceTwoTestDataset(data.Dataset):
   
   def __getitem__(self,index):
     
-    mask = np.ones((256,256,1))
+    mask = np.zeros((256,256,1))
     random_param = np.random.rand(1,4)#시작 x,y / width, height
     random_param[0,0:2] = random_param[0,0:2]*128
     random_param[0,2:] = random_param[0,2:]*32+96
@@ -79,9 +79,9 @@ class PlaceTwoTestDataset(data.Dataset):
     mask_center_x = (random_param[0,0]+random_param[0,2]/2)
     mask_center_y = (random_param[0,1]+random_param[0,3]/2)
 
-    mask[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 0#구멍이 있는 이미지
-    mask_rgb = np.ones((256,256,3))
-    mask_rgb[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 0#구멍이 있는 이미지
+    mask[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 1#구멍이 있는 이미지
+    mask_rgb = np.zeros((256,256,3))
+    mask_rgb[random_param[0,1]:random_param[0,1]+random_param[0,3], random_param[0,0]:random_param[0,0]+random_param[0,2]] = 1#구멍이 있는 이미지
     #특정 인덱스의 사진과 
     
     if torch.is_tensor(index):
@@ -92,7 +92,7 @@ class PlaceTwoTestDataset(data.Dataset):
 
     
     masked_image = unmasked_image.permute(1,2,0).numpy().copy()
-    masked_image[mask_rgb ==0] =0
+    masked_image[mask_rgb ==1] =1
 
     unmasked_image = self.transform2(unmasked_image).type(torch.float)
     masked_image =torch.from_numpy(masked_image).permute(2,0,1)

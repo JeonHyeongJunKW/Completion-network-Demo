@@ -6,7 +6,7 @@ from Dataset import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 TestGenerator = Completion_Network().to(device)
-TestGenerator.load_state_dict(torch.load("./model_weight/Generator/epoch_0_weight.pth"))
+TestGenerator.load_state_dict(torch.load("./model_weight/Generator/epoch_140_weight.pth"))
 dataset_test = PlaceTwoTestDataset()
 rand_idx = np.random.randint(328500,size=1)[0]
 unmasked_images, masked_images, masks, mask_center_x, mask_center_y = dataset_test[rand_idx]

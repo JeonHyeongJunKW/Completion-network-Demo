@@ -17,3 +17,20 @@ def GetLocalImage(images, local_x, local_y):
     temp_image = torch.unsqueeze(temp_image,0)
     cropped_image = torch.cat([cropped_image,temp_image],dim=0)
   return cropped_image
+
+
+def ImageSum(InputImage, Mask, RealImage):
+  '''
+  256*256 이미지 
+  >>> image[test<3] =0
+  Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+  IndexError: The shape of the mask [2, 2, 2] at index 1 does not match the shape of the indexed tensor [2, 3, 2, 2] at index 1
+  '''
+  triple_mask = Mask.expand(-1,3,-1,-1)# batch 1*width height로 늘리고, 차원을 3차원으로 늘림 -> 이미 배치로 나오면서 차원이 늘어나있음
+  ReturnImage = InputImage.clone()
+  ReturnImage[triple_mask ==0] = 0#마스킹연산
+  RealImage_copy =RealImage.clone()
+  RealImage_copy[triple_mask ==1] = 0#반대로 마스킹
+  ReturnImage = torch.add(ReturnImage,RealImage_copy)# 더하기 연산
+  return ReturnImage

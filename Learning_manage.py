@@ -16,8 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 writer = SummaryWriter("runs/Train")
 
 
-# writer_test = SummaryWriter("runs/Test")
-Tc = 900#90000 -> 100분의 1
+Tc = 500#90000 -> 140분의 1
 Td = 100#10000 -> 100분의 1
 Ttrain = 5000#500000 -> 100분의 1
 Tsum = Tc+Td+Ttrain
@@ -39,9 +38,8 @@ loss_fn_2 = nn.BCELoss(reduction='mean')
 #Generator의 출력이 1:1로 이미지가 같아지게하는 nn.Mse loss
 
 
-
+iteration = 0
 print("사용하는 디바이스", device)
-iteration =0
 for epoch in range(Tsum):
   for i , (unmasked_images, masked_images, masks, mask_center_x, mask_center_y) in enumerate(train_dataloader):
     unmasked_images= unmasked_images.to(device)
@@ -57,7 +55,10 @@ for epoch in range(Tsum):
       Generator.zero_grad()
       real_image = unmasked_images
       fake_image = Generator(MaskAndMaskedImage)
-      loss_mse = loss_fn_1(fake_image,real_image)
+      synthesis_image =ImageSum(fake_image,masks,real_image)# 합성한 이미지 입니다.
+      
+      
+      loss_mse = loss_fn_1(synthesis_image,real_image)
       loss_mse.backward()
       Gen_loss = loss_mse.item()
       OptimizerG.step()
@@ -79,9 +80,11 @@ for epoch in range(Tsum):
       
       with torch.no_grad():
         fake_image = Generator(MaskAndMaskedImage).to(device)
+      #출력된 페이크 이미지에서 마스크 만큼 잘라주는게 필요 
+      synthesis_image =ImageSum(fake_image,masks,real_image)# 합성한 이미지 입니다.
+      fake_local_image =GetLocalImage(synthesis_image, mask_center_x.numpy().reshape(-1,1).astype(np.int64), mask_center_y.numpy().reshape(-1,1).astype(np.int64)).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 
       
-      fake_local_image =GetLocalImage(fake_image, mask_center_x.numpy().reshape(-1,1).astype(np.int64), mask_center_y.numpy().reshape(-1,1).astype(np.int64)).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 
-      y_fake = Des_Net(fake_image,fake_local_image)
+      y_fake = Des_Net(synthesis_image,fake_local_image)
       fake_label = torch.full((y_fake.size(0),1), 0., dtype=torch.float,device=device)
       loss_bce_fake = loss_fn_2(y_fake,fake_label)
       loss_bce_fake.backward()#backward만 두개 해야한다.
@@ -100,23 +103,23 @@ for epoch in range(Tsum):
       real_label = torch.full((y_real.size(0),1), 1., dtype=torch.float,device=device)
       loss_bce_real = loss_fn_2(y_real,real_label)
       Des_Real_loss = loss_bce_real.item()
-      loss_bce_real.backward()#backward만 두개 해야한다.
+      loss_bce_real.backward()
 
       
       
       fake_image = Generator(MaskAndMaskedImage).to(device)
-      
-      fake_local_image =GetLocalImage(fake_image, mask_center_x.numpy().reshape(-1,1).astype(np.int64), mask_center_y.numpy().reshape(-1,1).astype(np.int64)).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 
-      y_fake = Des_Net(fake_image.detach(),fake_local_image.detach())
+      synthesis_image =ImageSum(fake_image,masks,real_image)
+      fake_local_image =GetLocalImage(synthesis_image, mask_center_x.numpy().reshape(-1,1).astype(np.int64), mask_center_y.numpy().reshape(-1,1).astype(np.int64)).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 
+      y_fake = Des_Net(synthesis_image.detach(),fake_local_image.detach())
       fake_label = torch.full((y_fake.size(0),1), 0., dtype=torch.float,device=device)
       loss_bce_fake = loss_fn_2(y_fake,fake_label)
-      loss_bce_fake.backward()#backward만 두개 해야한다.
+      loss_bce_fake.backward()
       Des_Fake_loss = loss_bce_fake.item()
       OptimizerD.step()
 
       Generator.zero_grad()
-      y_fake = Des_Net(fake_image,fake_local_image)
-      loss_G_fake = loss_fn_2(y_fake,real_label) +loss_fn_1(fake_image,real_image)*0.0004
+      y_fake = Des_Net(synthesis_image,fake_local_image)
+      loss_G_fake = loss_fn_2(y_fake,real_label) +loss_fn_1(synthesis_image,real_image)*0.0004
       loss_G_fake.backward()
       full_Gen_loss = loss_G_fake.item()
       OptimizerG.step()
@@ -125,7 +128,8 @@ for epoch in range(Tsum):
     if epoch %3 ==0 and i==0:
       
       with torch.no_grad():
-        DrawMiddleTrainResult(writer, unmasked_images[0],masked_images[0],fake_image[0],epoch)
+        
+        DrawMiddleTrainResult(writer, unmasked_images[0],masked_images[0],synthesis_image[0],epoch)
         rand_idx = np.random.randint(328500,size=1)[0]
         unmasked_images, masked_images, masks, mask_center_x, mask_center_y = dataset_test[rand_idx]
         unmasked_images= unmasked_images.view(1,3,256,256).to(device)
@@ -134,7 +138,8 @@ for epoch in range(Tsum):
     
         MaskAndMaskedImage = torch.cat([masked_images,masks],dim=1).to(device)
         fake_image = Generator(MaskAndMaskedImage).to(device)
-        DrawMiddleTestResult(writer,unmasked_images[0],masked_images[0],fake_image[0],epoch)
+        synthesis_image =ImageSum(fake_image[0].unsqueeze(0),masks,unmasked_images)
+        DrawMiddleTestResult(writer,unmasked_images[0],masked_images[0],synthesis_image[0],epoch)
         print("add new image")
     # print(Completed_image.shape)
   #모델 저장 
@@ -155,6 +160,6 @@ for epoch in range(Tsum):
     torch.save(Generator.state_dict(),
                         "./model_weight/Generator/epoch_"+str(epoch)+"_weight.pth")
     torch.save(Des_Net.state_dict(),
-                        "./model_weight/Descriminator/epoch_"+str(epoch)+"_weight.pth")
+                        "./model_weight/Discriminator/epoch_"+str(epoch)+"_weight.pth")
     print("현재 epoch : ", epoch)
 writer.close()
