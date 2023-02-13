@@ -1,29 +1,27 @@
 from torch.cuda import is_available
 from Network import *
 from Dataset import *
-#데이터로더 만들고 
-##데이터셋 만드는거 하고
 dataset = PlaceTwoDataset()
 dataset_test = PlaceTwoTestDataset()
-#학습 전반적으로 중간중간에 표시및 바꿔주는거 진행
 
 from torch.utils.data import DataLoader
 from Draw2Writer import *
 from tensorboardX import SummaryWriter
-from Mask_Maker import * 
+from Mask_Maker import *
+
 #외부적인 요소 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 writer = SummaryWriter("runs/Train")
 
-
+# 데이터셋의 규모가 감소하였습니다.
 Tc = 500#90000 -> 140분의 1
 Td = 100#10000 -> 100분의 1
 Ttrain = 5000#500000 -> 100분의 1
 Tsum = Tc+Td+Ttrain
 
 #모델 및 데이터셋 선언
-train_dataloader = DataLoader(dataset, batch_size=96,shuffle=True,num_workers=4)#1,434,892개의 이미지 
-test_dataloader = DataLoader(dataset_test, batch_size=1,shuffle=True,num_workers=4)#1,434,892개의 이미지 
+train_dataloader = DataLoader(dataset, batch_size=96,shuffle=True,num_workers=4)#원본 : 1,434,892개의 이미지
+test_dataloader = DataLoader(dataset_test, batch_size=1,shuffle=True,num_workers=4)#원본 : 1,434,892개의 이미지
 Generator = Completion_Network().to(device)
 Des_Net = Discriminator(256,256,128,128).to(device)
 
@@ -65,9 +63,12 @@ for epoch in range(Tsum):
     elif epoch < Tc+Td :
       Des_Net.zero_grad()
       real_image = unmasked_images
+
+      #배치사이즈만큼 임의의 중심점을 얻습니다.
       random_center_x = (np.random.rand(real_image.size(0),1)*144+48).astype(np.int64)
       random_center_y = (np.random.rand(real_image.size(0),1)*144+48).astype(np.int64)
-      real_local_image =GetLocalImage(real_image, random_center_x, random_center_y).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 
+
+      real_local_image =GetLocalImage(real_image, random_center_x, random_center_y).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻습니다.
 
       y_real = Des_Net(real_image,real_local_image)
 
@@ -80,6 +81,7 @@ for epoch in range(Tsum):
       
       with torch.no_grad():
         fake_image = Generator(MaskAndMaskedImage).to(device)
+
       #출력된 페이크 이미지에서 마스크 만큼 잘라주는게 필요 
       synthesis_image =ImageSum(fake_image,masks,real_image)# 합성한 이미지 입니다.
       fake_local_image =GetLocalImage(synthesis_image, mask_center_x.numpy().reshape(-1,1).astype(np.int64), mask_center_y.numpy().reshape(-1,1).astype(np.int64)).to(device)#이미지에서 특정 중심의 128*128의 이미지를 얻어야함 

@@ -28,7 +28,29 @@
 ![mask image804](https://user-images.githubusercontent.com/63538314/147931219-f19310dc-c24e-47bd-8e12-a53eefd0ee1c.jpg)
 ![fake image804](https://user-images.githubusercontent.com/63538314/147931224-30999b08-6a37-4e1c-8755-57529d51d89f.jpg)
 --- 
-## 
+
+## *파일구조설명
+
+폴더를 추가했습니다. 
+
+- model_weight : Generator와 Discriminator의 가중치를 저장합니다.
+- runs : tensorboardx에 모델 손실정보등을 저장합니다.
+- train_image : 모델 학습간에 train 데이터셋에 대한 결과이미지를 저장합니다.
+- test_image : 모델 학습간에 test 데이터셋에 대한 결과이미지를 저장합니다.
+
+파일 설명
+- Dataset.py : 데이터 로드 및 전처리를 수행합니다.
+- Learning_manage.py : 학습의 메인 코드입니다. 이파일을 실행하면 학습이 시작됩니다.
+- Network.py : 모델구조를 정의합니다.
+- Mask_Maker.py : Discriminator에 사용할 이미지를 크롭 및 합성 연산을 제공합니다.
+- Draw2Writer.py : train과 test결과를 저장하는 코드입니다.
+- TestModel.py : 실험결과를 확인해볼 모델로 결과를 확인합니다.
+
+## *본인 환경에서 코딩시 주의할점
+
+- Dataset.py 파일의 dataset 변수를 수정해야합니다.
+- TestModel.py 파일에서 읽어올 모델 파일이름을 수정해야합니다.
+
 ## 진행사항 
 - Dataset 및 Datset 완성 (21/12/24)
   - 각 이미지에 대한 데이터셋입니다. 랜덤사이즈의 직사각형 구멍을 형성하는 출력하게 하였습니다. 

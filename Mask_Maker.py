@@ -1,7 +1,7 @@
 import numpy as np
 import torch 
 def GetLocalImage(images, local_x, local_y):
-  #실제 이미지가 
+  #원본이미지에서 일부분을 크롭합니다.
   diff_x = local_x-65
   local_x[diff_x <0] =local_x[diff_x <0] -diff_x[diff_x <0]
   diff_x = local_x-191#256- 64 =192

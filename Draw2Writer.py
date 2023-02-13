@@ -14,7 +14,7 @@ def createFolder(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError:
-        print ('Error: Creating directory. ' +  directory)
+        print ('Error: Creating directory. ' + directory)
 
 
 def DrawMiddleTrainResult(writer,origin_image, masked_image, return_image,epoch):
